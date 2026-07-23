@@ -1,0 +1,6 @@
+{
+  "name": "Cryptography Lab",
+  "description": "2022 개정 교육과정 정보과 2단원(데이터와 정보) 연계 암호 알고리즘 실습 및 시각화 웹 애플리케이션",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
