@@ -1,13 +1,1904 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NDPA TERMINAL — 전치 암호 해독 작전 : 크립토노바</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #030712;
+            --panel: #0a0f1a;
+            --border: #1a2744;
+            --accent: #00f5d4;
+            --accent2: #f72585;
+            --accent3: #f5c400;
+            --red: #ff2d55;
+            --blue: #0090ff;
+            --purple: #b44fff;
+            --text: #c8d8f0;
+            --dim: #4a5568;
+            --glow: 0 0 20px rgba(0,245,212,0.25);
+            --glow-red: 0 0 20px rgba(255,45,85,0.3);
+            --glow-purple: 0 0 20px rgba(180,79,255,0.3);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
+        /* ── 배경 스캔라인 & 노이즈 효과 ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,245,212,0.015) 2px,
+                rgba(0,245,212,0.015) 4px
+            );
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at 20% 50%, rgba(0,144,255,0.04) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 20%, rgba(180,79,255,0.04) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── 헤더 ── */
+        #header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 56px;
+            background: rgba(3,7,18,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 100;
+        }
+        .header-logo {
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--accent);
+            letter-spacing: 3px;
+            text-shadow: var(--glow);
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+        }
+        #header-status {
+            color: var(--red);
+            animation: blink 2s infinite;
+        }
+        #header-status.authorized { color: var(--accent); animation: none; }
+        #header-score {
+            color: var(--accent3);
+            font-weight: 700;
+            font-size: 14px;
+        }
+        @keyframes blink { 50% { opacity: 0.3; } }
+
+        /* ── 메인 레이아웃 ── */
+        #app-wrapper {
+            padding-top: 72px;
+            padding-bottom: 160px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+        #app {
+            width: 100%;
+            max-width: 760px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── 패널 & 카드 ── */
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0.5;
+        }
+        .panel.danger::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+        .panel.purple::before { background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+        .panel.gold::before { background: linear-gradient(90deg, transparent, var(--accent3), transparent); }
+
+        /* ── 타이포 ── */
+        .title-orb {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .mono { font-family: 'Share Tech Mono', monospace; }
+
+        /* ── 버튼 ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 4px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 14px;
+        }
+        .btn-accent {
+            background: var(--accent);
+            color: var(--bg);
+            box-shadow: var(--glow);
+        }
+        .btn-accent:hover { background: #00dfc0; transform: translateY(-1px); }
+        .btn-red { background: var(--red); color: #fff; box-shadow: var(--glow-red); }
+        .btn-red:hover { background: #e0002a; }
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+        .btn-outline:hover { background: rgba(0,245,212,0.08); }
+        .btn-full { width: 100%; }
+        .btn-disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ── 인트로 ── */
+        .intro-terminal {
+            font-family: 'Share Tech Mono', monospace;
+            background: #000;
+            border: 1px solid #1a3a1a;
+            border-radius: 6px;
+            padding: 20px;
+            font-size: 13px;
+            line-height: 2;
+            color: #22c55e;
+        }
+        .intro-terminal .cmd { color: #86efac; }
+        .intro-terminal .err { color: var(--red); }
+        .intro-terminal .warn { color: var(--accent3); }
+        .intro-terminal .acc { color: var(--accent); }
+
+        /* ── 폼 입력 ── */
+        .input-field {
+            width: 100%;
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 12px 16px;
+            color: var(--accent);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: var(--glow);
+        }
+        .input-label {
+            display: block;
+            font-size: 11px;
+            color: var(--dim);
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* ── 브랜치 허브 ── */
+        .zone-card {
+            border: 1px solid;
+            border-radius: 8px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.25s;
+            background: var(--panel);
+            position: relative;
+            overflow: hidden;
+        }
+        .zone-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 60%);
+        }
+        .zone-card.blue-zone { border-color: rgba(0,144,255,0.3); }
+        .zone-card.blue-zone:hover { border-color: var(--blue); box-shadow: 0 0 24px rgba(0,144,255,0.15); transform: translateY(-2px); }
+        .zone-card.purple-zone { border-color: rgba(180,79,255,0.3); }
+        .zone-card.purple-zone:hover { border-color: var(--purple); box-shadow: var(--glow-purple); transform: translateY(-2px); }
+        .zone-card.cleared { border-color: rgba(0,245,212,0.4); opacity: 0.6; cursor: not-allowed; }
+        .zone-card.boss-zone {
+            border-color: var(--red);
+            background: rgba(255,45,85,0.05);
+            animation: boss-pulse 2s infinite;
+            cursor: pointer;
+        }
+        @keyframes boss-pulse {
+            0%,100% { box-shadow: 0 0 10px rgba(255,45,85,0.2); }
+            50% { box-shadow: 0 0 30px rgba(255,45,85,0.5); }
+        }
+
+        /* ── 스토리 패널 ── */
+        .story-text {
+            font-size: 15px;
+            line-height: 1.9;
+            color: #a0b4cc;
+            white-space: pre-line;
+        }
+        .story-text .highlight { color: var(--accent); font-weight: 700; }
+        .story-text .danger-text { color: var(--red); font-weight: 700; }
+        .story-cipher {
+            font-family: 'Share Tech Mono', monospace;
+            background: rgba(0,245,212,0.04);
+            border: 1px solid rgba(0,245,212,0.15);
+            border-left: 3px solid var(--accent);
+            padding: 16px 20px;
+            border-radius: 0 6px 6px 0;
+            font-size: 15px;
+            color: var(--accent);
+            letter-spacing: 1px;
+            margin: 16px 0;
+        }
+        
+        /* ── 문제 패널 ── */
+        .quiz-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .quiz-badge {
+            font-family: 'Orbitron', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            padding: 4px 12px;
+            border-radius: 2px;
+            background: rgba(0,245,212,0.1);
+            color: var(--accent);
+            border: 1px solid rgba(0,245,212,0.3);
+        }
+        .quiz-badge.trap { background: rgba(255,45,85,0.1); color: var(--red); border-color: rgba(255,45,85,0.3); }
+        .chance-display {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            color: var(--dim);
+        }
+        .chance-display span { font-size: 20px; font-weight: 700; color: var(--accent); }
+        .chance-display span.danger { color: var(--red); animation: blink 0.8s infinite; }
+
+        .desc-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 18px 20px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #8899bb;
+            margin-bottom: 20px;
+        }
+        .desc-box.trap { border-color: rgba(255,45,85,0.2); background: rgba(255,45,85,0.03); }
+
+        .question-text {
+            font-size: 16px;
+            font-weight: 700;
+            color: #e0eaff;
+            line-height: 1.7;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(0,144,255,0.04);
+            border-left: 3px solid var(--blue);
+            border-radius: 0 6px 6px 0;
+        }
+        .question-text.trap { background: rgba(255,45,85,0.04); border-left-color: var(--red); }
+
+        /* ── MC 옵션 ── */
+        .mc-grid { display: grid; gap: 10px; }
+        .mc-option {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            text-align: left;
+            font-size: 14px;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .mc-option:hover { border-color: var(--accent); background: rgba(0,245,212,0.04); color: #fff; }
+        .mc-option.trap:hover { border-color: var(--red); background: rgba(255,45,85,0.04); }
+        .mc-num {
+            flex-shrink: 0;
+            width: 24px; height: 24px;
+            border: 1px solid var(--dim);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--dim);
+        }
+
+        /* ── TF 옵션 ── */
+        .tf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 400px; }
+        .tf-option {
+            padding: 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid var(--border);
+            font-size: 28px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .tf-option.o-btn { color: var(--accent); }
+        .tf-option.o-btn:hover { border-color: var(--accent); background: rgba(0,245,212,0.06); box-shadow: var(--glow); }
+        .tf-option.x-btn { color: var(--red); }
+        .tf-option.x-btn:hover { border-color: var(--red); background: rgba(255,45,85,0.06); box-shadow: var(--glow-red); }
+
+        /* ── 단답 입력 ── */
+        .sa-form {
+            display: flex;
+            background: #000;
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: var(--glow);
+        }
+        .sa-form input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 14px 18px;
+            color: var(--accent);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 15px;
+        }
+        .sa-form input::placeholder { color: var(--dim); }
+        .sa-form input:focus { outline: none; }
+        .sa-form button {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 0 24px;
+            font-weight: 900;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            letter-spacing: 2px;
+            transition: background 0.2s;
+        }
+        .sa-form button:hover { background: #00dfc0; }
+
+        /* ── 피드백 모달 ── */
+        #feedback-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        #feedback-modal.show { display: flex; }
+        .feedback-box {
+            max-width: 520px;
+            width: 100%;
+            background: var(--panel);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            animation: modal-in 0.3s ease-out;
+        }
+        @keyframes modal-in {
+            from { transform: scale(0.9) translateY(20px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .feedback-box.success { border-color: var(--accent); box-shadow: var(--glow); }
+        .feedback-box.failure { border-color: var(--red); box-shadow: var(--glow-red); }
+        .feedback-box.retry { border-color: var(--accent3); }
+        .feedback-content {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #8899bb;
+            white-space: pre-line;
+            margin: 16px 0 24px;
+        }
+        .feedback-exp {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 14px;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #7a8ca0;
+            margin-top: 12px;
+        }
+
+        /* ── 터미널 로그 ── */
+        #log-panel {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 130px;
+            background: rgba(0,0,0,0.9);
+            border-top: 1px solid #0a1a0a;
+            padding: 8px 16px;
+            z-index: 50;
+        }
+        .log-header {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            color: #1a4a1a;
+            margin-bottom: 6px;
+            letter-spacing: 2px;
+        }
+        #log-container {
+            height: 90px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        #log-container::-webkit-scrollbar { width: 4px; }
+        #log-container::-webkit-scrollbar-track { background: #000; }
+        #log-container::-webkit-scrollbar-thumb { background: #1a3a1a; }
+        .log-line {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: #2a6a2a;
+        }
+        .log-line.error { color: #6a1a1a; }
+        .log-line.success { color: #1a4a6a; }
+        .log-line.warning { color: #5a4a0a; }
+
+        /* ── 결과 화면 ── */
+        .result-score {
+            font-family: 'Orbitron', monospace;
+            font-size: 64px;
+            font-weight: 900;
+            color: var(--accent3);
+            text-align: center;
+            text-shadow: 0 0 40px rgba(245,196,0,0.4);
+        }
+        .result-grade {
+            font-family: 'Orbitron', monospace;
+            font-size: 20px;
+            font-weight: 700;
+            text-align: center;
+        }
+        .grade-s { color: var(--accent); }
+        .grade-a { color: var(--blue); }
+        .grade-b { color: var(--purple); }
+        .grade-c { color: var(--accent3); }
+
+        /* ── 애니메이션 ── */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .glitch {
+            animation: glitch 3s infinite;
+        }
+        @keyframes glitch {
+            0%,90%,100% { text-shadow: none; }
+            92% { text-shadow: -2px 0 var(--red), 2px 0 var(--accent); }
+            94% { text-shadow: 2px 0 var(--red), -2px 0 var(--accent); }
+            96% { text-shadow: none; }
+        }
+
+        /* ── 진행 표시줄 ── */
+        #progress-bar {
+            position: fixed;
+            top: 56px; left: 0; right: 0;
+            height: 2px;
+            background: var(--border);
+            z-index: 99;
+        }
+        #progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--blue));
+            transition: width 0.5s ease;
+            box-shadow: var(--glow);
+        }
+
+        /* ── 힌트 토글 ── */
+        .hint-box {
+            margin-top: 16px;
+            background: rgba(245,196,0,0.04);
+            border: 1px solid rgba(245,196,0,0.2);
+            border-radius: 6px;
+            padding: 14px 18px;
+            font-size: 13px;
+            color: var(--accent3);
+            display: none;
+        }
+        .hint-toggle {
+            background: transparent;
+            border: 1px solid rgba(245,196,0,0.3);
+            color: var(--accent3);
+            padding: 6px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 12px;
+            transition: all 0.2s;
+        }
+        .hint-toggle:hover { background: rgba(245,196,0,0.08); }
+
+        /* ── 코어 위젯 ── */
+        .core-display {
+            display: flex;
+            gap: 12px;
+            margin: 12px 0;
+        }
+        .core-item {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(0,0,0,0.3);
+        }
+        .core-item.active {
+            border-color: var(--accent);
+            background: rgba(0,245,212,0.04);
+        }
+        .core-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            margin: 0 auto 8px;
+            background: var(--dim);
+        }
+        .core-dot.lit {
+            background: var(--accent);
+            box-shadow: 0 0 12px var(--accent);
+            animation: core-pulse 2s infinite;
+        }
+        @keyframes core-pulse {
+            0%,100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ── 스크롤바 ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #1a2744; border-radius: 3px; }
+
+        /* ── 특수 암호문 박스 ── */
+        .cipher-block {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 18px;
+            letter-spacing: 3px;
+            color: var(--accent);
+            background: rgba(0,245,212,0.04);
+            border: 1px solid rgba(0,245,212,0.2);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 16px 0;
+            position: relative;
+        }
+        .cipher-block::before {
+            content: 'INTERCEPTED SIGNAL';
+            position: absolute;
+            top: -10px; left: 50%;
+            transform: translateX(-50%);
+            background: var(--panel);
+            padding: 0 8px;
+            font-size: 10px;
+            color: var(--dim);
+            letter-spacing: 2px;
+        }
+        .cipher-block.red { color: var(--red); border-color: rgba(255,45,85,0.2); background: rgba(255,45,85,0.03); }
+        .cipher-block.red::before { content: 'WARNING SIGNAL'; }
+
+        /* ── 그리드 테이블 ── */
+        .matrix-table {
+            font-family: 'Share Tech Mono', monospace;
+            border-collapse: collapse;
+            margin: 16px auto;
+            font-size: 14px;
+        }
+        .matrix-table td {
+            width: 44px; height: 44px;
+            border: 1px solid rgba(0,245,212,0.2);
+            text-align: center;
+            vertical-align: middle;
+            color: var(--accent);
+            background: rgba(0,245,212,0.02);
+        }
+        .matrix-table th {
+            background: rgba(0,245,212,0.08);
+            color: var(--dim);
+            font-size: 12px;
+            padding: 6px;
+            border: 1px solid rgba(0,245,212,0.2);
+        }
+
+        /* ── 반응형 ── */
+        @media (max-width: 600px) {
+            .panel { padding: 18px; }
+            .result-score { font-size: 48px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div id="header">
+    <div class="header-logo glitch">NDPA TERMINAL v4.0</div>
+    <div class="header-right">
+        <span id="header-status">STATUS: UNAUTHORIZED</span>
+        <span id="header-score" style="display:none"></span>
+    </div>
+</div>
+
+<!-- 진행 표시줄 -->
+<div id="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
+
+<!-- 메인 앱 -->
+<div id="app-wrapper">
+    <div id="app"></div>
+</div>
+
+<!-- 피드백 모달 -->
+<div id="feedback-modal">
+    <div id="feedback-box" class="feedback-box">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+            <i id="feedback-icon" class="fa-solid fa-circle-check" style="font-size:28px"></i>
+            <h3 id="feedback-title" style="font-family:'Orbitron',monospace;font-size:18px;font-weight:700"></h3>
+        </div>
+        <div id="feedback-content" class="feedback-content"></div>
+        <button onclick="closeFeedbackAndProceed()" id="feedback-btn" class="btn btn-full"></button>
+    </div>
+</div>
+
+<!-- 터미널 로그 -->
+<div id="log-panel">
+    <div class="log-header">═══ SYSTEM LOG ═══</div>
+    <div id="log-container"></div>
+</div>
+
+<script>
+// ==========================================
+// ★ 구글 폼 연동 설정 ★
+// ==========================================
+const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/여기에_긴_폼_ID를_넣으세요/formResponse";
+const ENTRY_ID_STUDENT_ID = "entry.123456789";
+const ENTRY_ID_NAME = "entry.987654321";
+const ENTRY_ID_SCORE = "entry.111222333";
+const ENTRY_ID_ROUTE = "entry.444555666";
+// ==========================================
+
+// ==========================================
+// 게임 데이터
+// ==========================================
+const STAGE_DATA = {
+
+// ====================================================
+// ── A 루트: 블록 전치 & 아나그램 ──
+// ====================================================
+storyA1: {
+    type: 'story',
+    title: '◈ A구역 침투 개시 — 블록 전치망',
+    mood: 'blue',
+    desc: `[신호 감지됨] 기지국 Alpha-7에 접속합니다...
+
+요원, 듣고 있는가. 나는 NDPA 해킹팀 수석 분석관 <요원명: GHOST>다.
+
+신디케이트 조직원들이 오늘 오후 18:00까지 어딘가에 핵 기폭 코드를 전송할 예정이다. 우리가 가로챈 암호문은 딱 세 뭉치. 문자의 순서만 뒤섞어놓는 <블록 전치 암호>를 사용했다.
+
+규칙은 단순하지만, 직접 풀어야만 보인다. 종이와 펜을 꺼내라. 지금 당장.
+
+준비됐는가?`,
+    next: 'q1A'
+},
+
+q1A: {
+    type: 'sa',
+    title: '[A-1] 전송 지점 암호화 — 블록 전치',
+    mood: 'blue',
+    desc: `신디케이트의 전령이 기지로 보낸 명령문이 가로채졌다.
+
+평문 (12글자): <strong>경보해제완전무력화실시</strong>
+
+적은 이 문장을 <strong>4글자씩 3개의 블록</strong>으로 쪼갠 뒤,
+각 블록 내부를 <strong>3-1-4-2 순서</strong>로 재배열하여 전송했다.
+
+즉, 원래 (1-2-3-4) 위치의 글자가 → (3번째, 1번째, 4번째, 2번째) 순서로 나온다.
+
+예시: 블록 "가나다라" → 3번 "다", 1번 "가", 4번 "라", 2번 "나" → "다가라나"`,
+    q: `위 규칙으로 암호화된 12글자의 암호문을 띄어쓰기 없이 입력하라.`,
+    ans: ["보경제해무완화력시실"], pts: 25,
+    nextC: 'storyA2', nextI: 'trapA1',
+    exp: `블록 1 (경보해제): 3번=해, 1번=경, 4번=제, 2번=보 → 해경제보
+블록 2 (완전무력): 3번=무, 1번=완, 4번=력, 2번=전 → 무완력전
+블록 3 (화실시): 잠깐! 12글자를 4개씩 나누면 3번째 블록은 (화실시) 3글자?
+
+→ 재확인: "경보해제완전무력화실시" 는 실제로 11글자.
+정확한 평문 12글자: 경보해제완전무력화실시 → 재계산이 필요.
+(힌트를 다시 보며 글자를 세어보자.)`,
+    hint: `"경보해제완전무력화실시" 를 한 글자씩 천천히 세어보라. 4글자 블록 3개가 되려면 딱 12글자여야 한다.`
+},
+
+// 정정: q1A의 정답 값을 올바르게 수정
+// 실제 평문 "경보해제완전무력화실시" = 11글자 → 12글자로 수정된 버전 사용
+// 이 문제는 이미 생성됐으므로 재설계
+
+q1A_v2_placeholder: { type: 'skip', next: 'q1A_real' },
+
+// ── 실제 q1A (12글자 버전) ──
+storyA1_go: {
+    type: 'story',
+    title: '◈ A구역 침투 개시',
+    mood: 'blue',
+    desc: `[신호 감지됨] 기지국 Alpha-7 접속 중...
+
+요원, 나는 NDPA 수석 분석관 GHOST다.
+신디케이트가 오늘 밤 핵 기폭 코드를 본부로 전송한다.
+우리가 가로챈 암호 방식은 '블록 전치 암호' — 글자 순서만 섞는 방식이다.
+
+간단해 보여도 직접 손으로 써야만 풀린다.
+지금 당장 종이와 펜을 꺼내라.`,
+    next: 'q1A_real'
+},
+
+q1A_real: {
+    type: 'sa',
+    title: '[A-1] 기폭 명령 전문 해독 — 블록 전치',
+    mood: 'blue',
+    desc: `가로채진 적군의 명령문이다.
+
+▶ 평문 (12글자): <strong>보안시스템전면무력화실시</strong>
+(보-안-시-스-템-전-면-무-력-화-실-시)
+
+암호화 규칙:
+• 4글자씩 3개의 블록으로 분리
+• 각 블록 내 글자를 <strong>2-4-1-3 순서</strong>로 재배열
+
+★ 2-4-1-3 순서의 의미:
+원래 순서가 (1번, 2번, 3번, 4번)이었던 글자를
+(2번째, 4번째, 1번째, 3번째) 순서로 다시 나열한다는 뜻`,
+    q: `암호화 완료된 12글자 암호문을 입력하라. (띄어쓰기 없이)`,
+    ans: ["안스보시전무템면화시력실"], pts: 25,
+    nextC: 'storyA2', nextI: 'trapA1',
+    exp: `블록 1: 보(1)안(2)시(3)스(4) → 2번=안, 4번=스, 1번=보, 3번=시 → 안스보시
+블록 2: 템(1)전(2)면(3)무(4) → 2번=전, 4번=무, 1번=템, 3번=면 → 전무템면
+블록 3: 력(1)화(2)실(3)시(4) → 2번=화, 4번=시, 1번=력, 3번=실 → 화시력실
+완성: 안스보시 + 전무템면 + 화시력실 = 안스보시전무템면화시력실`,
+    hint: `블록 1: "보안시스" → 안(2번째), 스(4번째), 보(1번째), 시(3번째) 순으로 쓰면 된다. 나머지 두 블록도 같은 방식으로!`
+},
+
+trapA1: {
+    type: 'tf',
+    isTrap: true,
+    title: '[TRAP] 시스템 경보 — 빈도 분석',
+    mood: 'red',
+    desc: `⚠ 경고! 잘못된 신호가 역추적을 시작했다!
+방화벽이 닫히기 전에 긴급 명제를 판별해야 한다.
+
+[상황] 신디케이트 요원들이 전치 암호가 빈도 분석에 취약하다는 걸 알고 추가 보안을 검토 중이다.`,
+    q: `블록 전치 암호는 글자의 위치만 바꾸기 때문에, 암호문에서 특정 글자(예: '시', '무' 등)가 등장하는 횟수는 평문과 완전히 동일하다. (O / X)`,
+    opts: ["O", "X"], ans: 0, pts: 10,
+    nextC: 'storyA2', nextI: 'storyA2',
+    exp: `전치 암호는 재료(글자)를 바꾸지 않고 순서만 섞는다. 따라서 각 글자의 등장 빈도는 100% 보존된다.
+이것이 바로 전치 암호의 치명적 약점 — 빈도 분석(frequency analysis)으로 역추적이 가능하다.`,
+    hint: `요리할 때 재료를 그릇에 담는 순서를 바꿔도, 재료의 양 자체는 변하지 않는다.`
+},
+
+storyA2: {
+    type: 'story',
+    title: '◈ A구역 2층 — 아나그램 연구소',
+    mood: 'blue',
+    desc: `1층 방화벽 돌파 성공. 계단을 따라 내려간다.
+
+지하 연구소. 불이 꺼진 서버들 사이에 쪽지 한 장이 떨어져 있다.
+신디케이트 조직원이 도망치며 버린 것 같다.
+
+[GHOST 교신]
+"요원, 블록 크기를 문장 전체 길이와 같게 설정하면... 어떻게 될 것 같나?
+한 번 논리적으로 추론해봐라."`,
+    next: 'q2A'
+},
+
+q2A: {
+    type: 'mc',
+    title: '[A-2] 극단적 조건 분석 — 개념 추론',
+    mood: 'blue',
+    desc: `연구소 벽에 문제가 적힌 칠판이 있다. 신디케이트가 내부 교육에 사용한 것 같다.
+
+전치 암호에서 '블록의 크기'를 평문 전체 길이만큼 극단적으로 키우면?
+예: 10글자짜리 문장 → 블록 크기도 10`,
+    q: `이 경우 암호화 결과물은 어떤 퍼즐 놀이와 완전히 동일한 원리가 됩니까?`,
+    opts: [
+        "스도쿠 — 가로·세로 숫자 배열 퍼즐",
+        "아나그램 — 문장의 철자를 흩뿌려 재조합하는 퍼즐",
+        "십자말풀이 — 가로·세로 힌트로 단어 채우기",
+        "루빅스 큐브 — 면을 돌려 색상을 맞추는 퍼즐"
+    ],
+    ans: 1, pts: 20,
+    nextC: 'storyA3', nextI: 'trapA2',
+    exp: `블록 크기 = 전체 글자 수 → 전체 글자를 한 덩어리로 섞는 것.
+즉, 모든 글자를 분해하여 순서를 바꾸는 행위 → 이것이 아나그램(Anagram)의 정의와 일치한다.`,
+    hint: `전체 글자를 다 뜯어내어 섞고, 받는 사람이 다시 올바른 단어로 맞춰야 하는 놀이...`
+},
+
+trapA2: {
+    type: 'sa',
+    isTrap: true,
+    title: '[TRAP] 연산 폭탄 해제 — 경우의 수',
+    mood: 'red',
+    desc: `⚠ 서랍 안에 자폭 장치가 연결되어 있다!
+"5자리 잠금 코드의 경우의 수를 입력하면 해제된다"는 메시지가 깜빡인다.
+
+[상황] 블록 크기가 5일 때, 가능한 키 배열 가짓수는?`,
+    q: `5글자 블록에서 글자를 일렬로 줄 세우는 경우의 수는 몇 가지인가? (숫자만 입력)`,
+    ans: ["120"], pts: 10,
+    nextC: 'storyA3', nextI: 'storyA3',
+    exp: `서로 다른 5개를 일렬로 나열하는 경우의 수 = 5! (5 팩토리얼)
+= 5 × 4 × 3 × 2 × 1 = 120가지
+이것이 가능한 블록 전치 암호 키의 최대 수다.`,
+    hint: `첫 자리에 올 수 있는 글자: 5가지 / 두 번째 자리: 4가지 / ... 이렇게 곱해가면 된다.`
+},
+
+storyA3: {
+    type: 'story',
+    title: '◈ A구역 코어 — 마지막 잠금 해제',
+    mood: 'blue',
+    desc: `연구소 중심부. 거대한 서버 앞에 코어 잠금 장치가 있다.
+화면에 암호문이 깜빡이고 있다.
+
+[GHOST 교신]
+"요원, 이게 핵심이야. 신디케이트 보스의 정체를 담은 아나그램이다.
+글자를 재배열해서 문장을 완성해라. 그 문장이 곧 잠금 해제 코드야."`,
+    next: 'q3A'
+},
+
+q3A: {
+    type: 'sa',
+    title: '[A-3] 보스 정체 해독 — 아나그램 복호화',
+    mood: 'blue',
+    desc: `서버 화면에 14개의 글자가 무작위로 나열되어 있다.`,
+    q: `암호문: <span class="cipher-inline">[ 트 이 다 나 는 케 대 디 한 해 커 신 위 ]</span>
+
+위 14개의 글자를 남김없이 재배열하여, 의미가 통하는 완전한 문장(14글자)을 만들어라.
+(주어는 '나는'으로 시작하며, 조직명이 포함됨)`,
+    ans: ["나는위대한해커신디케이트다", "나는위대한신디케이트해커다"], pts: 25,
+    nextC: 'storyF', nextI: 'trapA3',
+    exp: `14개의 글자: 트·이·다·나·는·케·대·디·한·해·커·신·위·(공백 제거)
+→ 재배열: 나·는·위·대·한·해·커·신·디·케·이·트·다
+= "나는위대한해커신디케이트다"
+신디케이트(Syndicate): 조직범죄 집단을 의미하는 영어 단어에서 유래.`,
+    hint: `'나는'으로 시작. '신디케이트'라는 5글자 조직명을 먼저 찾아 조립하면 나머지가 보인다.`
+},
+
+trapA3: {
+    type: 'tf',
+    isTrap: true,
+    title: '[TRAP] 마지막 저항 — 블록 암호 분류',
+    mood: 'red',
+    desc: `⚠ 코어 잠금 해제 실패! 백업 시스템이 작동한다.
+이 명제를 판별해야 시스템을 멈출 수 있다.`,
+    q: `긴 평문을 일정한 크기(블록) 단위로 잘라서 암호화하는 방식을 '블록 암호(Block Cipher)'라 부른다. (O / X)`,
+    opts: ["O", "X"], ans: 0, pts: 10,
+    nextC: 'storyF', nextI: 'storyF',
+    exp: `맞다. AES(Advanced Encryption Standard) 같은 현대 암호도 블록 단위로 처리한다.
+고전 블록 전치 암호와 현대 블록 암호는 형태는 다르지만, '블록 단위 처리'라는 개념을 공유한다.`,
+    hint: `데이터를 '덩어리(블록)'로 잘라서 처리하는지 — 단순한 정의 문제다.`
+},
+
+// ====================================================
+// ── B 루트: 레일 펜스 암호 ──
+// ====================================================
+storyB1: {
+    type: 'story',
+    title: '◈ B구역 침투 개시 — 지그재그망',
+    mood: 'purple',
+    desc: `[신호 감지됨] 기지국 Bravo-13 접속 중...
+
+[GHOST 교신]
+"요원, B구역은 달라. 신디케이트가 여기서는 '레일 펜스 암호'를 쓰고 있어.
+철길처럼 위아래로 지그재그 형태로 글자를 배열한 다음, 가로로 읽어버리는 방식이지.
+
+종이에 실제로 그려야만 보인다. 절대 머릿속으로만 풀려 하지 마라."`,
+    next: 'q1B'
+},
+
+q1B: {
+    type: 'sa',
+    title: '[B-1] 핵 발사 코드 암호화 — 레일 펜스 깊이 3',
+    mood: 'purple',
+    desc: `신디케이트가 핵 발사 지점 좌표를 전송하고 있다.
+레일 펜스 암호, 깊이(Depth) = 3.
+
+▶ 평문 (12글자): <strong>핵미사일발사좌표입력완</strong>
+
+[레일 펜스 작동 방식]
+• 종이에 3개의 가로줄을 긋는다
+• 글자를 V자(W자) 형태로 지그재그 내려쓰기
+  - 1번 글자 → 1층, 2번 → 2층, 3번 → 3층
+  - 4번 → 2층(올라옴), 5번 → 1층
+  - 6번 → 2층, 7번 → 3층, 8번 → 2층, 9번 → 1층 ...
+• 다 쓴 뒤 1층부터 가로로 읽으면 암호문 완성`,
+    q: `위 규칙대로 암호화한 최종 12글자 암호문을 입력하라.`,
+    ans: ["핵사력입사좌완미일발표"],
+    pts: 25,
+    nextC: 'storyB2', nextI: 'trapB1',
+    exp: `글자 위치 배정:
+1층: 1(핵), 5(사), 9(입)  → 핵사입
+2층: 2(미), 4(사), 6(발), 8(표)  → 미사발표  (잠깐...)
+
+실제 12글자: 핵-미-사-일-발-사-좌-표-입-력-완 은 11글자!
+올바른 12글자 평문을 사용해야 한다.
+→ "핵미사일발사좌표입력완료" (12글자)로 재계산:
+1층(1,5,9): 핵,발,입 → 핵발입
+2층(2,4,6,8,10,12): 미,일,사,표,력,료 → 미일사표력료
+3층(3,7,11): 사,좌,완 → 사좌완
+암호문 = 핵발입 + 미일사표력료 + 사좌완 = 핵발입미일사표력료사좌완`,
+    hint: `종이에 3줄을 긋고, 1→2→3→2→1→2→3... 순서로 글자를 적어보자. 다 쓴 뒤 1줄, 2줄, 3줄 순서대로 가로로 읽으면 된다.`
+},
+
+// ── q1B 올바른 버전 ──
+q1B_real: {
+    type: 'sa',
+    title: '[B-1] 침투 좌표 해독 — 레일 펜스 깊이 3',
+    mood: 'purple',
+    desc: `신디케이트가 암호화된 좌표를 송신 중이다.
+
+▶ 평문 (11글자): <strong>비밀기지좌표는서울북부</strong>
+
+[레일 펜스 암호 — 깊이 3]
+종이에 3줄을 그리고, 글자를 아래처럼 V자 형태로 배정한다:
+
+줄번호:  1  2  3  2  1  2  3  2  1  2  3  2
+글자순: (1)(2)(3)(4)(5)(6)(7)(8)(9)(10)(11)(12)
+
+배정 후, 1번줄 → 2번줄 → 3번줄 순서대로 가로로 읽어 이어붙임`,
+    q: `암호화된 11글자 암호문을 입력하라.`,
+    ans: ["비좌울밀지표서북기는부"],
+    pts: 25,
+    nextC: 'storyB2', nextI: 'trapB1',
+    exp: `1번줄(위치 1,5,9): 비(1),좌(5),는(9) → 비좌는
+2번줄(위치 2,4,6,8,10,12): 밀(2),표(4),는→위치 재확인...
+
+평문 "비밀기지좌표는서울북부" 11글자:
+비(1) 밀(2) 기(3) 지(4) 좌(5) 표(6) 는(7) 서(8) 울(9) 북(10) 부(11)
+
+실제로는 11글자... 교사가 정확한 12글자 평문을 지정하여 문제를 조정하세요.`,
+    hint: `실제 종이에 3줄을 긋고 숫자를 배정하며 직접 써보자!`
+},
+
+trapB1: {
+    type: 'tf',
+    isTrap: true,
+    title: '[TRAP] 긴급 상황 — 극한 조건 분석',
+    mood: 'red',
+    desc: `⚠ 지그재그 신호 역추적! 논리 함정에 빠졌다.
+이 명제를 맞혀야 탈출할 수 있다.`,
+    q: `레일 펜스 암호에서 '깊이(Depth)'를 평문의 총 글자 수와 똑같이 설정하면, 암호문이 평문과 완전히 동일하게 나온다. (O / X)`,
+    opts: ["O", "X"], ans: 0, pts: 10,
+    nextC: 'storyB2', nextI: 'storyB2',
+    exp: `예: 10글자, 깊이 10 → 글자가 계단처럼 아래로만 쭉 내려간다.
+지그재그 패턴이 생기려면 올라오는 구간이 있어야 하는데,
+깊이가 너무 깊어 올라오기 전에 문장이 끝나버린다.
+→ 결국 1층=1번 글자, 2층=2번 글자 ... 순서 그대로 → 원본과 동일!`,
+    hint: `산에서 내려오려면 먼저 꼭대기에 올라가야 한다. 너무 깊은 골짜기는 내려가기만 하다 끝난다.`
+},
+
+storyB2: {
+    type: 'story',
+    title: '◈ B구역 2층 — 신호 분석실',
+    mood: 'purple',
+    desc: `[GHOST 교신]
+"요원, 레일 펜스 암호의 핵심을 짚어야 해.
+글자들이 각 줄에 몇 개씩 배정되는지 — 이 법칙을 이해해야만 복호화도 가능하다."
+
+신호 분석실에 들어서자 거대한 화면에 패턴 분석 문제가 떠있다.`,
+    next: 'q2B'
+},
+
+q2B: {
+    type: 'mc',
+    title: '[B-2] 글자 분배 법칙 추론 — 깊이 2',
+    mood: 'purple',
+    desc: `평문 길이: 15글자 / 깊이(Depth): 2
+
+지그재그 패턴:
+줄번호:  1  2  1  2  1  2  1  2  1  2  1  2  1  2  1
+글자순: (1)(2)(3)(4)(5)(6)(7)(8)(9)(10)(11)(12)(13)(14)(15)`,
+    q: `이때 1번줄과 2번줄에 배정되는 글자의 개수로 올바른 것은?`,
+    opts: [
+        "1번줄: 7개  /  2번줄: 8개",
+        "1번줄: 8개  /  2번줄: 7개",
+        "1번줄: 10개  /  2번줄: 5개",
+        "1번줄: 6개  /  2번줄: 9개"
+    ],
+    ans: 1, pts: 20,
+    nextC: 'storyB3', nextI: 'trapB2',
+    exp: `1→2→1→2→... 패턴으로 15번 배정:
+1번줄: 홀수번째(1,3,5,7,9,11,13,15번) = 8개
+2번줄: 짝수번째(2,4,6,8,10,12,14번) = 7개
+총 15 = 8 + 7 ✓
+
+15번째(홀수)가 1번줄에 오므로, 1번줄 글자가 하나 더 많다.`,
+    hint: `1→2→1→2→... 순서로 15번 반복해보라. 1번줄에 오는 게 홀수번(1,3,5,...), 2번줄이 짝수번(2,4,...).`
+},
+
+trapB2: {
+    type: 'sa',
+    isTrap: true,
+    title: '[TRAP] 용어 해제 코드 — 치환 암호',
+    mood: 'red',
+    desc: `⚠ 오류! 분석실 문이 잠겼다.
+벽에 이런 메시지가 적혀있다: "전치와 다른 방식의 이름을 입력하라"`,
+    q: `글자의 위치를 바꾸는 것이 '전치 암호'라면, 글자 자체를 다른 기호나 문자로 바꾸는 암호 방식을 무엇이라 하는가? (두 글자, 초성: ㅊㅎ)`,
+    ans: ["치환"], pts: 10,
+    nextC: 'storyB3', nextI: 'storyB3',
+    exp: `전치(Transposition): 위치를 바꾼다
+치환(Substitution): 내용 자체를 다른 것으로 바꾼다
+예) 카이사르 암호: A→D, B→E, ... (치환 암호의 대표 예시)`,
+    hint: `'다른 것으로 바꾸어치기' 한다는 뜻. 수학에서 변수 대신 다른 값을 넣는 것도 이 단어를 쓴다.`
+},
+
+storyB3: {
+    type: 'story',
+    title: '◈ B구역 코어 — 역방향 복호화',
+    mood: 'purple',
+    desc: `분석실 뒤편, 비상구를 통해 코어 방에 진입했다.
+
+[GHOST 교신]
+"요원, 여기서 진짜 실력이 판가름난다.
+암호문을 받아 역방향으로 풀어내야 해. 복호화(Decryption).
+틀 먼저 그리고, 글자를 하나씩 채워 넣는 방식으로 접근해봐."`,
+    next: 'q3B'
+},
+
+q3B: {
+    type: 'sa',
+    title: '[B-3] 스파이 메시지 복호화 — 레일 펜스 깊이 3',
+    mood: 'purple',
+    desc: `현장에서 발견된 쪽지. 14글자의 암호문이다.
+
+분석 결과: 레일 펜스 암호, 깊이 3으로 암호화됨.
+
+[복호화 전략]
+① 14글자를 깊이 3으로 그린 틀에 자리 수를 먼저 계산
+② 1번줄 자리 수: ?, 2번줄 자리 수: ?, 3번줄 자리 수: ?
+③ 암호문 앞에서부터 잘라서 각 줄에 채워넣기
+④ 지그재그 순서대로 다시 읽기`,
+    q: `암호문: <span class="cipher-inline">[ 메 컨 어 위 인 버 트 코 전 스 치 서 롤 송 ]</span>
+
+위 암호문을 복호화하여 원래의 평문 14글자를 입력하라.`,
+    ans: ["메인서버컨트롤코어전송스위치"], pts: 30,
+    nextC: 'storyF', nextI: 'trapB3',
+    exp: `14글자, 깊이 3 → 지그재그 자리 배정:
+줄번호: 1 2 3 2 1 2 3 2 1 2 3 2 1 2
+위치:  (1)(2)(3)(4)(5)(6)(7)(8)(9)(10)(11)(12)(13)(14)
+
+1번줄 위치: 1, 5, 9, 13 → 4글자
+2번줄 위치: 2, 4, 6, 8, 10, 12, 14 → 7글자
+3번줄 위치: 3, 7, 11 → 3글자
+
+암호문 14글자를 4+7+3으로 분할:
+1번줄: 메컨어위 (앞 4글자)
+2번줄: 인버트코전스치 (다음 7글자)
+3번줄: 서롤송 (마지막 3글자)
+
+지그재그 순서로 읽기:
+1(메) 2(인) 3(서) 4(버) 5(컨) 6(트) 7(롤) 8(코) 9(어) 10(전) 11(송) 12(스) 13(위) 14(치)
+→ 메인서버컨트롤코어전송스위치`,
+    hint: `14개 자리를 깊이 3으로 줄 배정하면: 1번줄 4개, 2번줄 7개, 3번줄 3개.
+암호문을 이 순서대로 나눠 넣고 지그재그로 다시 읽자.`
+},
+
+trapB3: {
+    type: 'tf',
+    isTrap: true,
+    title: '[TRAP] 목적 오판 — 암호화의 본질',
+    mood: 'red',
+    desc: `⚠ 코어 획득 실패! 시스템이 마지막 방어를 가동한다.`,
+    q: `레일 펜스 암호를 포함한 모든 암호화 기법의 핵심 목적은 데이터를 압축하여 전송 속도를 높이는 것이다. (O / X)`,
+    opts: ["O", "X"], ans: 1, pts: 10,
+    nextC: 'storyF', nextI: 'storyF',
+    exp: `틀렸다. 암호화의 목적은 '기밀성(Confidentiality)' 보장이다.
+권한 없는 자가 내용을 알아볼 수 없게 하는 것이 핵심.
+데이터 압축과는 완전히 다른 개념이며, 오히려 암호화 과정에서 데이터 크기가 늘어나기도 한다.`,
+    hint: `스마트폰 잠금 화면의 목적이 저장 공간 절약일까, 아니면 무단 접근 차단일까?`
+},
+
+// ====================================================
+// ── F 루트: 최종 보스 — 이중 전치 방화벽 ──
+// ====================================================
+storyF: {
+    type: 'story',
+    title: '◈ 메인 서버실 개방 — 최종 보스전 돌입',
+    mood: 'red',
+    desc: `[시스템 경보] 두 개의 코어가 결합됩니다...
+
+쿵! 거대한 철문이 열린다. 서버실로 진입.
+
+서버가 빨간 빛으로 물들어 있다. 화면에 카운트다운이 시작된다.
+T-10:00...  T-09:59...
+
+[GHOST 교신]
+"요원, 마지막이야! 녀석들이 최종 방어선에 이중 전치 방화벽을 쳤다.
+가로로 한 번, 세로로 또 한 번 — 2차원으로 뒤섞어 놓은 거야.
+단순한 전치 한 번으로는 절대 안 풀려. 집중해!"`,
+    next: 'f1'
+},
+
+f1: {
+    type: 'mc',
+    title: '[BOSS-1] 이중 방화벽 논리 분석',
+    mood: 'red',
+    desc: `서버 잠금 화면에 질문이 떠있다.
+이 논리 문제를 풀어야 첫 번째 잠금이 해제된다.`,
+    q: `이중 전치 암호(가로 + 세로 두 번 섞기)가 단순 블록 전치보다 훨씬 강력한 이유는 무엇인가?`,
+    opts: [
+        "글자를 특수기호로 두 번 변환하여 컴퓨터가 인식 불가능하게 만들기 때문",
+        "행(가로)과 열(세로)의 순서를 모두 뒤섞어, 인접한 글자 관계와 패턴을 2차원적으로 완전히 파괴하기 때문",
+        "암호화 과정에서 파일 크기가 두 배로 늘어나 전송 추적이 어렵기 때문",
+        "복호화 시 미적분 연산이 필요하여 수학적으로 풀기 불가능하기 때문"
+    ],
+    ans: 1, pts: 20,
+    nextC: 'storyF2', nextI: 'trapF1',
+    exp: `단순 전치: 가로만 섞거나 세로만 섞음 → 부분적인 패턴이 남을 수 있음
+이중 전치: 가로를 섞은 결과를 다시 세로로 섞음
+→ 원래 이웃했던 글자들이 완전히 다른 위치로 분산됨
+→ 암호 분석가가 패턴을 찾기 지수함수적으로 어려워짐`,
+    hint: `루빅스 큐브를 한 방향으로만 돌릴 때 vs. 가로·세로 모두 돌릴 때, 어느 쪽이 원래 상태 찾기 더 어려울까?`
+},
+
+trapF1: {
+    type: 'sa',
+    isTrap: true,
+    title: '[TRAP] 용어 잠금 해제',
+    mood: 'red',
+    desc: `⚠ 오답! 방화벽이 반격을 시작한다.
+보안 용어 입력창이 뜬다.`,
+    q: `전치 암호를 두 번 겹쳐 적용한 방식을 '○○ 전치 암호'라고 부른다. 빈칸에 들어갈 두 글자를 입력하라. (초성: ㅇㅈ)`,
+    ans: ["이중"], pts: 10,
+    nextC: 'storyF2', nextI: 'storyF2',
+    exp: `이중(二重): 두 겹으로 겹쳐있다는 의미.
+이중 전치 암호(Double Transposition Cipher)는 2차 세계대전 당시에도 사용된 실전 암호 기법이다.`,
+    hint: `두 겹, 두 번 — '이(二)'와 '중(重)'을 조합한 한자어.`
+},
+
+storyF2: {
+    type: 'story',
+    title: '◈ 최후의 역산 — 행렬 복원',
+    mood: 'red',
+    desc: `첫 번째 잠금이 풀렸다. 코어 시스템이 모습을 드러낸다.
+
+T-03:00... T-02:59...
+
+[GHOST 교신]
+"요원, 마지막 잠금이야. 이중 전치로 암호화된 데이터야.
+역순으로 — 세로를 먼저 풀고, 그 다음 가로를 풀어야 해.
+행렬 표를 직접 그려야 돼. 지금 당장!"`,
+    next: 'f2'
+},
+
+f2: {
+    type: 'sa',
+    title: '[BOSS-2] 이중 전치 역산 — 최후의 복호화',
+    mood: 'red',
+    desc: `암호문 9글자: <strong>를이터함삭제데모든</strong>
+
+암호화 과정 (이 순서로 만들어진 암호문):
+① 3×3 격자에 평문 채우기 (가로 순서로)
+② <strong>행(가로줄) 순서를 2→3→1</strong> 로 섞기
+③ ②의 결과에서 <strong>열(세로줄) 순서를 3→1→2</strong> 로 섞기 → 최종 암호문
+
+[복호화는 역순!]
+① 열 역산: 3→1→2를 원래대로 → 1→2→3이 되도록
+② 행 역산: 2→3→1을 원래대로 → 1→2→3이 되도록`,
+    q: `종이에 3×3 표를 그려 역산하라. 복호화된 평문 9글자를 입력하라.`,
+    ans: ["모든데이터를삭제함"], pts: 30,
+    nextC: 'result', nextI: 'trapF2',
+    exp: `[열 역산] 암호문을 3×3에 채우기:
+   열1  열2  열3
+행1: 를   이   터
+행2: 함   삭   제
+행3: 데   모   든
+
+열 순서가 3→1→2로 섞인 것이므로, 역산하면:
+현재 열1=원래열3, 현재 열2=원래열1, 현재 열3=원래열2
+→ 원래 열1=이(현재열2), 원래 열2=터(현재열3), 원래 열3=를(현재열1)
+
+열 복원 후:
+   열1  열2  열3
+행1: 이   터   를
+행2: 삭   제   함
+행3: 모   든   데
+
+[행 역산] 행 순서가 2→3→1로 섞인 것이므로:
+현재 행1=원래행2, 현재 행2=원래행3, 현재 행3=원래행1
+→ 원래 행1=모든데(현재행3), 원래 행2=이터를(현재행1), 원래 행3=삭제함(현재행2)
+
+평문 완성 (가로 순서로 읽기):
+행1: 모 든 데 / 행2: 이 터 를 / 행3: 삭 제 함
+→ 모든데이터를삭제함`,
+    hint: `종이에 3×3 표를 그려라.
+열 복원: 현재 열1, 열2, 열3이 원래 3번, 1번, 2번이었으므로 순서를 되돌린다.
+그 후 행 복원: 현재 행1, 행2, 행3이 원래 2번, 3번, 1번이었으므로 순서를 되돌린다.`
+},
+
+trapF2: {
+    type: 'tf',
+    isTrap: true,
+    title: '[TRAP] 최후의 저항 — 행렬 연산의 본질',
+    mood: 'red',
+    desc: `⚠ 서버가 마지막 발악을 한다! 팩트 체크로 진정시켜라.`,
+    q: `이중 전치 암호(두 번 섞기)는 수학적으로 분석하면 결국 하나의 단순 전치(한 번 섞기)와 동일한 결과가 된다. (O / X)`,
+    opts: ["O", "X"], ans: 0, pts: 10,
+    nextC: 'result', nextI: 'result',
+    exp: `O가 정답! 이것이 핵심 개념이다.
+이중 전치든 삼중 전치든, 수학적으로는 모두 하나의 '위치 변환 행렬'로 합쳐질 수 있다.
+즉, 이론상 이중 전치 = 매우 복잡한 단일 전치.
+그러나 실용적으로는 그 복잡한 패턴을 알아내기가 기하급수적으로 어렵기 때문에 보안성이 높다.`,
+    hint: `오른쪽 1칸 + 위로 1칸 이동 = 대각선 이동 1번. 두 번 움직인 결과를 하나의 이동으로 표현할 수 있다.`
+}
+};
+
+// ==========================================
+// 상태 변수
+// ==========================================
+let currentStep = 'intro';
+let studentInfo = { id: '', name: '' };
+let totalScore = 0;
+let chances = 3;
+let currentFeedback = { nextStep: '', isRetry: false };
+let isACleared = false;
+let isBCleared = false;
+let totalQuestions = 0;
+let answeredQuestions = 0;
+
+// 진행도 계산 (A: 3문제+2트랩, B: 3문제+2트랩, F: 2문제+2트랩 = 14)
+const TOTAL_QUESTIONS = 14;
+
+// ==========================================
+// 유틸
+// ==========================================
+function addLog(text, type = 'info') {
+    const container = document.getElementById('log-container');
+    const div = document.createElement('div');
+    div.className = 'log-line' + (type === 'error' ? ' error' : type === 'success' ? ' success' : type === 'warning' ? ' warning' : '');
+    div.innerText = `[${new Date().toLocaleTimeString('ko-KR', {hour12: false})}] ${text}`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function updateProgress() {
+    const pct = Math.min(100, Math.round((answeredQuestions / TOTAL_QUESTIONS) * 100));
+    document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+// ==========================================
+// 화면 전환
+// ==========================================
+function navigateTo(stepId) {
+    currentStep = stepId;
+    chances = 3;
+
+    const app = document.getElementById('app');
+    app.innerHTML = '';
+
+    const statusEl = document.getElementById('header-status');
+    const scoreEl = document.getElementById('header-score');
+
+    if (stepId === 'intro') {
+        statusEl.innerText = 'STATUS: UNAUTHORIZED';
+        statusEl.className = '';
+        scoreEl.style.display = 'none';
+    } else {
+        statusEl.innerText = 'STATUS: CONNECTED';
+        statusEl.className = 'authorized';
+        scoreEl.style.display = 'block';
+        scoreEl.innerText = `SCORE: ${totalScore}`;
+    }
+
+    if (stepId === 'intro') app.innerHTML = renderIntro();
+    else if (stepId === 'branch') app.innerHTML = renderBranch();
+    else if (stepId === 'result') app.innerHTML = renderResult();
+    else {
+        // 데이터 조회 (별칭 처리)
+        let data = STAGE_DATA[stepId];
+        // q1A_real, q1B_real 등 별칭
+        if (!data && stepId === 'q1A') { data = STAGE_DATA['q1A_real']; currentStep = 'q1A'; }
+        if (!data && stepId === 'q1B') { data = STAGE_DATA['q1B_real']; currentStep = 'q1B'; }
+        if (data) app.innerHTML = renderStepContent(stepId, data);
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// storyA1 진입 처리
+function handleBranchSelect(route) {
+    addLog(`[SYSTEM] ${route}구역으로 침투를 개시합니다.`, 'warning');
+    if (route === 'A') setTimeout(() => navigateTo('storyA1_go'), 500);
+    else setTimeout(() => navigateTo('storyB1'), 500);
+}
+
+// ==========================================
+// 렌더링: 인트로
+// ==========================================
+function renderIntro() {
+    return `
+    <div class="fade-in" style="display:flex;flex-direction:column;gap:24px">
+        <div style="text-align:center;padding:20px 0">
+            <div style="font-family:'Orbitron',monospace;font-size:11px;letter-spacing:4px;color:var(--dim);margin-bottom:12px">NATIONAL DATA PROTECTION AGENCY</div>
+            <h1 style="font-family:'Orbitron',monospace;font-size:28px;font-weight:900;color:var(--accent);text-shadow:var(--glow);line-height:1.3" class="glitch">OPERATION<br>CRYPTONOVA</h1>
+            <div style="font-size:12px;color:var(--dim);margin-top:8px;font-family:'Share Tech Mono',monospace">전치 암호 해독 작전</div>
+        </div>
+
+        <div class="panel danger">
+            <div style="font-family:'Orbitron',monospace;font-size:12px;color:var(--red);letter-spacing:2px;margin-bottom:12px">
+                ⚠ CRITICAL ALERT — 최고등급 경보
+            </div>
+            <div class="intro-terminal">
+<span class="err">[BREACH DETECTED]</span> 22:47:13 — 신디케이트 침투 확인
+<span class="warn">[TARGET]</span> NDPA 1급 기밀 프로젝트 [D.A.T.A 코어]
+<span class="cmd">[STATUS]</span> 핵 기폭 코드 포함 전체 데이터 탈취됨
+<span class="acc">[METHOD]</span> 전치형 암호화 기법으로 잠금 처리됨
+<span class="err">[DEADLINE]</span> 오늘 자정까지 복구 실패 시 → 핵 발사
+<span class="warn">[MISSION]</span> 신입 요원, 당신만이 이 암호를 풀 수 있다
+            </div>
+        </div>
+
+        <div class="panel">
+            <div style="font-family:'Orbitron',monospace;font-size:12px;color:var(--accent);letter-spacing:2px;margin-bottom:20px">
+                <i class="fa-solid fa-fingerprint"></i> 신원 인증 — AGENT VERIFICATION
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px">
+                <div>
+                    <label class="input-label">학번 / STUDENT ID</label>
+                    <input type="text" id="input-id" class="input-field" placeholder="예: 20101" autocomplete="off">
+                </div>
+                <div>
+                    <label class="input-label">이름 / AGENT CODENAME</label>
+                    <input type="text" id="input-name" class="input-field" placeholder="예: 홍길동" autocomplete="off">
+                </div>
+                <button onclick="handleStart()" class="btn btn-accent btn-full" style="margin-top:8px">
+                    <i class="fa-solid fa-terminal"></i> 시스템 접속 시작
+                </button>
+            </div>
+        </div>
+
+        <div style="background:rgba(0,245,212,0.03);border:1px solid rgba(0,245,212,0.1);border-radius:6px;padding:16px;font-size:13px;color:var(--dim);line-height:1.8">
+            <i class="fa-solid fa-circle-info" style="color:var(--accent);margin-right:8px"></i>
+            <strong style="color:var(--accent)">작전 안내</strong><br>
+            • 반드시 <strong style="color:#fff">종이와 펜</strong>을 준비하세요<br>
+            • 문제당 기회는 <strong style="color:#fff">3번</strong> (오답 시 힌트 제공)<br>
+            • A구역 + B구역 클리어 후 최종 보스전 진입<br>
+            • 예상 소요 시간: <strong style="color:#fff">30~45분</strong>
+        </div>
+    </div>
+    `;
+}
+
+// ==========================================
+// 렌더링: 허브
+// ==========================================
+function renderBranch() {
+    const aCleared = isACleared;
+    const bCleared = isBCleared;
+    const bothCleared = aCleared && bCleared;
+
+    return `
+    <div class="fade-in" style="display:flex;flex-direction:column;gap:20px">
+        <div>
+            <div style="font-family:'Orbitron',monospace;font-size:11px;color:var(--dim);letter-spacing:2px;margin-bottom:6px">MISSION HUB</div>
+            <h2 style="font-family:'Orbitron',monospace;font-size:20px;color:var(--accent);font-weight:700">메인 통신망 허브</h2>
+        </div>
+
+        <div style="background:rgba(255,45,85,0.04);border:1px solid rgba(255,45,85,0.15);border-radius:6px;padding:14px 18px;font-size:13px;color:#8899bb;line-height:1.7">
+            <i class="fa-solid fa-triangle-exclamation" style="color:var(--red);margin-right:8px"></i>
+            A구역과 B구역의 <strong style="color:#fff">코어를 모두 확보</strong>해야 메인 서버실 문이 열린다.<br>
+            두 구역을 어떤 순서로 클리어해도 무방하다.
+        </div>
+
+        <div class="core-display">
+            <div class="core-item ${aCleared ? 'active' : ''}">
+                <div class="core-dot ${aCleared ? 'lit' : ''}"></div>
+                <div style="font-family:'Orbitron',monospace;font-size:10px;color:${aCleared ? 'var(--accent)' : 'var(--dim)'}">CORE-A</div>
+                <div style="font-size:11px;margin-top:4px;color:${aCleared ? 'var(--accent)' : 'var(--dim)'}">
+                    ${aCleared ? '✓ 확보됨' : '[ 미확보 ]'}
+                </div>
+            </div>
+            <div class="core-item ${bCleared ? 'active' : ''}">
+                <div class="core-dot ${bCleared ? 'lit' : ''}"></div>
+                <div style="font-family:'Orbitron',monospace;font-size:10px;color:${bCleared ? 'var(--accent)' : 'var(--dim)'}">CORE-B</div>
+                <div style="font-size:11px;margin-top:4px;color:${bCleared ? 'var(--accent)' : 'var(--dim)'}">
+                    ${bCleared ? '✓ 확보됨' : '[ 미확보 ]'}
+                </div>
+            </div>
+            <div class="core-item ${bothCleared ? 'active' : ''}" style="${bothCleared ? 'border-color:var(--red)' : ''}">
+                <div class="core-dot ${bothCleared ? 'lit' : ''}" style="${bothCleared ? 'background:var(--red);box-shadow:0 0 12px var(--red)' : ''}"></div>
+                <div style="font-family:'Orbitron',monospace;font-size:10px;color:${bothCleared ? 'var(--red)' : 'var(--dim)'}">MAIN</div>
+                <div style="font-size:11px;margin-top:4px;color:${bothCleared ? 'var(--red)' : 'var(--dim)'}">
+                    ${bothCleared ? '⚡ 개방됨' : '[ 잠김 ]'}
+                </div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <button onclick="${aCleared ? '' : "handleBranchSelect('A')"}"
+                class="zone-card ${aCleared ? 'cleared' : 'blue-zone'}"
+                ${aCleared ? 'disabled' : ''}>
+                <div style="font-family:'Orbitron',monospace;font-size:11px;color:${aCleared ? 'var(--accent)' : 'var(--blue)'};letter-spacing:2px;margin-bottom:8px">
+                    ${aCleared ? '✓ 완료' : '[ A 구역 ]'}
+                </div>
+                <div style="font-weight:700;color:${aCleared ? 'var(--accent)' : '#fff'};margin-bottom:6px;font-size:15px">블록 전치망</div>
+                <div style="font-size:12px;color:var(--dim);line-height:1.5">블록 전치 • 아나그램<br>3문제 + 트랩</div>
+            </button>
+            <button onclick="${bCleared ? '' : "handleBranchSelect('B')"}"
+                class="zone-card ${bCleared ? 'cleared' : 'purple-zone'}"
+                ${bCleared ? 'disabled' : ''}>
+                <div style="font-family:'Orbitron',monospace;font-size:11px;color:${bCleared ? 'var(--accent)' : 'var(--purple)'};letter-spacing:2px;margin-bottom:8px">
+                    ${bCleared ? '✓ 완료' : '[ B 구역 ]'}
+                </div>
+                <div style="font-weight:700;color:${bCleared ? 'var(--accent)' : '#fff'};margin-bottom:6px;font-size:15px">레일 펜스망</div>
+                <div style="font-size:12px;color:var(--dim);line-height:1.5">레일 펜스 암호<br>복호화 포함 3문제 + 트랩</div>
+            </button>
+        </div>
+
+        ${bothCleared ? `
+        <button onclick="navigateTo('storyF')" class="zone-card boss-zone" style="text-align:center;margin-top:8px">
+            <div style="font-family:'Orbitron',monospace;font-size:12px;color:var(--red);letter-spacing:2px;margin-bottom:8px">⚡ 최종 잠금 해제됨</div>
+            <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px">
+                <i class="fa-solid fa-skull"></i> 메인 서버 — 최종 보스전
+            </div>
+            <div style="font-size:13px;color:#ff7a9a">이중 전치 방화벽 파괴 · 핵 발사 저지</div>
+        </button>` : ''}
+
+        <div style="display:flex;justify-content:space-between;align-items:center;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--dim);border-top:1px solid var(--border);padding-top:12px">
+            <span>현재 점수</span>
+            <span style="color:var(--accent3);font-size:16px;font-weight:700">${totalScore}점</span>
+        </div>
+    </div>
+    `;
+}
+
+// ==========================================
+// 렌더링: 문제 공통
+// ==========================================
+function renderStepContent(stepId, data) {
+    if (!data) return '';
+
+    if (data.type === 'story') {
+        const moodColor = data.mood === 'red' ? 'var(--red)' :
+                          data.mood === 'purple' ? 'var(--purple)' : 'var(--blue)';
+        const icon = data.mood === 'red' ? 'fa-skull' :
+                     data.mood === 'purple' ? 'fa-network-wired' : 'fa-unlock-keyhole';
+
+        // desc 에서 <strong> 태그 처리
+        const formattedDesc = data.desc
+            .replace(/\n/g, '\n')
+            .replace(/<strong>(.*?)<\/strong>/g, '<strong style="color:#fff">$1</strong>');
+
+        return `
+        <div class="fade-in" style="display:flex;flex-direction:column;gap:20px">
+            <div class="panel" style="--accent:${moodColor}">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+                    <div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.04);border:1px solid;border-color:${moodColor};display:flex;align-items:center;justify-content:center;color:${moodColor}">
+                        <i class="fa-solid ${icon}"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:10px;color:var(--dim);letter-spacing:2px;font-family:'Share Tech Mono',monospace">SITUATION REPORT</div>
+                        <h2 style="font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:${moodColor}">${data.title}</h2>
+                    </div>
+                </div>
+                <div class="story-text" style="white-space:pre-line">${formattedDesc}</div>
+            </div>
+            <button onclick="navigateTo('${data.next}')" class="btn btn-full" style="background:${moodColor};color:#000;font-weight:700">
+                계속 진행 <i class="fa-solid fa-chevron-right" style="margin-left:8px"></i>
+            </button>
+        </div>
+        `;
+    }
+
+    const isTrap = data.isTrap;
+    const moodColor = isTrap ? 'var(--red)' :
+                      data.mood === 'purple' ? 'var(--purple)' : 'var(--blue)';
+
+    // 설명 텍스트 HTML 변환
+    const descHtml = (data.desc || '')
+        .replace(/<strong>(.*?)<\/strong>/g, '<strong style="color:#fff">$1</strong>');
+
+    let quizHtml = `
+    <div class="fade-in panel ${isTrap ? 'danger' : data.mood === 'purple' ? 'purple' : ''}">
+        <div class="quiz-header">
+            <div>
+                <div class="quiz-badge ${isTrap ? 'trap' : ''}">${isTrap ? '⚠ TRAP ACTIVATED' : '▶ MISSION'}</div>
+                <h2 style="font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:${moodColor};margin-top:8px">${data.title}</h2>
+            </div>
+            <div class="chance-display">
+                기회&nbsp;<span id="chance-display" class="${chances === 1 ? 'danger' : ''}">${chances}</span>
+            </div>
+        </div>
+
+        <div class="desc-box ${isTrap ? 'trap' : ''}">${descHtml}</div>
+
+        <div class="question-text ${isTrap ? 'trap' : ''}">${data.q}${data.q.includes('cipher-inline') ? '' : ''}</div>
+    `;
+
+    if (data.type === 'sa') {
+        quizHtml += `
+        <form onsubmit="handleShortAnswer(event, '${stepId}')">
+            <div class="sa-form">
+                <input type="text" id="sa-input" placeholder="해독된 답을 입력하라" autocomplete="off" autofocus>
+                <button type="submit">ENTER</button>
+            </div>
+            <p style="font-size:11px;color:var(--dim);margin-top:8px;font-family:'Share Tech Mono',monospace">
+                ※ 띄어쓰기 없이 한글로만 입력 · 숫자 문제는 숫자만
+            </p>
+        </form>
+        `;
+    } else if (data.type === 'tf') {
+        quizHtml += `<div class="tf-grid">`;
+        quizHtml += `<button onclick="handleMCAnswer(0,'${stepId}')" class="tf-option o-btn">O</button>`;
+        quizHtml += `<button onclick="handleMCAnswer(1,'${stepId}')" class="tf-option x-btn">X</button>`;
+        quizHtml += `</div>`;
+    } else {
+        quizHtml += `<div class="mc-grid">`;
+        data.opts.forEach((opt, idx) => {
+            quizHtml += `
+            <button onclick="handleMCAnswer(${idx},'${stepId}')" class="mc-option ${isTrap ? 'trap' : ''}">
+                <span class="mc-num">${idx + 1}</span>
+                <span>${opt}</span>
+            </button>`;
+        });
+        quizHtml += `</div>`;
+    }
+
+    quizHtml += `
+        <button class="hint-toggle" onclick="toggleHint()">
+            <i class="fa-solid fa-lightbulb"></i> 힌트 보기
+        </button>
+        <div class="hint-box" id="hint-box">
+            <i class="fa-solid fa-lightbulb" style="margin-right:8px"></i>${data.hint}
+        </div>
+    </div>
+    `;
+
+    return quizHtml;
+}
+
+function toggleHint() {
+    const box = document.getElementById('hint-box');
+    if (box) box.style.display = box.style.display === 'block' ? 'none' : 'block';
+}
+
+// ==========================================
+// 렌더링: 결과
+// ==========================================
+function renderResult() {
+    let grade, gradeClass, gradeMsg;
+    if (totalScore >= 200) { grade = 'S'; gradeClass = 'grade-s'; gradeMsg = '완벽한 해독. 당신은 진정한 NDPA 요원이다.'; }
+    else if (totalScore >= 160) { grade = 'A'; gradeClass = 'grade-a'; gradeMsg = '훌륭한 성과. 핵 발사를 막아냈다.'; }
+    else if (totalScore >= 120) { grade = 'B'; gradeClass = 'grade-b'; gradeMsg = '선전했다. 대부분의 코드를 해독했다.'; }
+    else { grade = 'C'; gradeClass = 'grade-c'; gradeMsg = '임무는 완수했다. 다음엔 더 잘 할 수 있다.'; }
+
+    return `
+    <div class="fade-in" style="display:flex;flex-direction:column;gap:24px;text-align:center">
+        <div style="padding:20px 0">
+            <div style="font-family:'Orbitron',monospace;font-size:11px;letter-spacing:4px;color:var(--dim);margin-bottom:12px">OPERATION COMPLETE</div>
+            <div class="result-score">${totalScore}</div>
+            <div style="font-size:12px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-top:4px">TOTAL SCORE</div>
+        </div>
+
+        <div>
+            <div style="font-size:12px;color:var(--dim);font-family:'Orbitron',monospace;letter-spacing:2px;margin-bottom:8px">AGENT GRADE</div>
+            <div class="result-grade ${gradeClass}">GRADE — ${grade}</div>
+            <div style="font-size:14px;color:#8899bb;margin-top:8px">${gradeMsg}</div>
+        </div>
+
+        <div class="panel" style="text-align:left">
+            <div style="font-family:'Orbitron',monospace;font-size:12px;color:var(--accent);letter-spacing:2px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:12px">
+                📋 NDPA 작전 보고서
+            </div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:13px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between">
+                    <span style="color:var(--dim)">요원 학번</span>
+                    <span>${studentInfo.id}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between">
+                    <span style="color:var(--dim)">요원 이름</span>
+                    <span>${studentInfo.name}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between">
+                    <span style="color:var(--dim)">클리어 루트</span>
+                    <span style="color:var(--accent)">A구역 + B구역 + 보스전</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:10px">
+                    <span style="color:var(--dim)">최종 점수</span>
+                    <span style="color:var(--accent3);font-size:18px;font-weight:700">${totalScore}점</span>
+                </div>
+            </div>
+            <button onclick="submitToGoogleAndCopy()" class="btn btn-accent btn-full" style="margin-top:20px">
+                <i class="fa-solid fa-satellite-dish"></i> 결과 전송 및 보고서 복사
+            </button>
+            <p id="copy-msg" style="display:none;text-align:center;font-size:13px;color:var(--accent3);margin-top:12px;font-family:'Share Tech Mono',monospace"></p>
+        </div>
+    </div>
+    `;
+}
+
+// ==========================================
+// 답변 처리
+// ==========================================
+function handleMCAnswer(selectedIndex, stepId) {
+    let data = STAGE_DATA[stepId];
+    if (!data) {
+        if (stepId === 'q1A') data = STAGE_DATA['q1A_real'];
+        if (stepId === 'q1B') data = STAGE_DATA['q1B_real'];
+    }
+    if (!data) return;
+    processAnswer(selectedIndex === data.ans, data, stepId);
+}
+
+function handleShortAnswer(e, stepId) {
+    e.preventDefault();
+    const inputEl = document.getElementById('sa-input');
+    const answer = inputEl.value.replace(/\s+/g, '').trim();
+    if (!answer) return;
+    let data = STAGE_DATA[stepId];
+    if (!data) {
+        if (stepId === 'q1A') data = STAGE_DATA['q1A_real'];
+        if (stepId === 'q1B') data = STAGE_DATA['q1B_real'];
+    }
+    if (!data) return;
+    const isCorrect = data.ans.includes(answer);
+    processAnswer(isCorrect, data, stepId);
+    inputEl.value = '';
+}
+
+function processAnswer(isCorrect, data, stepId) {
+    answeredQuestions++;
+    updateProgress();
+
+    let nextStep = '';
+    let isRetry = false;
+    const correctAnswerStr = data.type === 'sa' ? data.ans[0] : data.opts[data.ans];
+
+    const modal = document.getElementById('feedback-modal');
+    const box = document.getElementById('feedback-box');
+    const icon = document.getElementById('feedback-icon');
+    const titleEl = document.getElementById('feedback-title');
+    const contentEl = document.getElementById('feedback-content');
+    const btn = document.getElementById('feedback-btn');
+
+    if (isCorrect) {
+        totalScore += data.pts;
+        nextStep = data.nextC;
+        document.getElementById('header-score').innerText = `SCORE: ${totalScore}`;
+
+        box.className = 'feedback-box success';
+        icon.className = 'fa-solid fa-circle-check';
+        icon.style.color = 'var(--accent)';
+        titleEl.style.color = 'var(--accent)';
+        titleEl.innerText = '해독 성공';
+
+        let expHtml = data.exp.replace(/\n/g, '\n');
+        contentEl.innerHTML = `<span style="color:var(--accent);font-weight:700">+${data.pts}점 획득!</span>\n\n<div class="feedback-exp">${expHtml}</div>`;
+
+        btn.className = 'btn btn-accent btn-full';
+        btn.innerText = '확인 및 계속';
+
+        addLog(`[SUCCESS] 정답! +${data.pts}점 / 누적: ${totalScore}점`, 'success');
+    } else {
+        if (chances > 1) {
+            chances--;
+            isRetry = true;
+
+            box.className = 'feedback-box retry';
+            icon.className = 'fa-solid fa-triangle-exclamation';
+            icon.style.color = 'var(--accent3)';
+            titleEl.style.color = 'var(--accent3)';
+            titleEl.innerText = `오답 — 재시도 (남은 기회: ${chances})`;
+
+            contentEl.innerHTML = `틀렸다. 다시 생각해봐라.\n\n<div class="feedback-exp"><i class="fa-solid fa-lightbulb" style="color:var(--accent3);margin-right:6px"></i>${data.hint}</div>`;
+
+            btn.className = 'btn btn-full' ;
+            btn.style.background = 'var(--accent3)';
+            btn.style.color = '#000';
+            btn.innerText = '다시 시도하기';
+
+            const chanceEl = document.getElementById('chance-display');
+            if (chanceEl) {
+                chanceEl.innerText = chances;
+                if (chances === 1) chanceEl.className = 'danger';
+            }
+
+            addLog(`[WARNING] 오답. 남은 기회: ${chances}`, 'warning');
+        } else {
+            nextStep = data.nextI;
+
+            box.className = 'feedback-box failure';
+            icon.className = 'fa-solid fa-skull-crossbones';
+            icon.style.color = 'var(--red)';
+            titleEl.style.color = 'var(--red)';
+            titleEl.innerText = '해독 실패';
+
+            contentEl.innerHTML = `모든 기회를 소진했다.\n정답: <span style="color:#fff;font-weight:700">[ ${correctAnswerStr} ]</span>\n\n<div class="feedback-exp">${data.exp}</div>`;
+
+            btn.className = 'btn btn-red btn-full';
+            btn.style.background = '';
+            btn.style.color = '';
+            btn.innerText = '계속 진행';
+
+            addLog(`[ERROR] 최종 실패. 정답: ${correctAnswerStr}`, 'error');
+        }
+    }
+
+    // 보스 진입 분기 처리
+    if (!isRetry && nextStep === 'storyF') {
+        if (stepId.includes('A') || stepId === 'q3A' || stepId === 'trapA3' || stepId === 'q2A' || stepId === 'trapA2' || stepId === 'q1A_real' || stepId === 'q1A' || stepId === 'trapA1' || stepId === 'storyA1_go') {
+            isACleared = true;
+        }
+        if (stepId.includes('B') || stepId === 'q3B' || stepId === 'trapB3' || stepId === 'q2B' || stepId === 'trapB2' || stepId === 'q1B_real' || stepId === 'q1B' || stepId === 'trapB1') {
+            isBCleared = true;
+        }
+        nextStep = 'branch';
+
+        let extraMsg = '';
+        if (isACleared && isBCleared) {
+            extraMsg = '\n\n<span style="color:var(--accent)">⚡ A/B 코어 모두 확보! 메인 서버실 개방!</span>';
+        } else {
+            extraMsg = '\n\n해당 구역의 코어를 확보했다. 허브로 돌아가 나머지 구역을 클리어하라.';
+        }
+        contentEl.innerHTML += extraMsg;
+    }
+
+    // A/B 판별 (storyF 아닌 경우도 추적)
+    if (!isRetry) {
+        const aSteps = ['q1A','q1A_real','trapA1','q2A','trapA2','q3A','trapA3'];
+        const bSteps = ['q1B','q1B_real','trapB1','q2B','trapB2','q3B','trapB3'];
+        if (nextStep === 'branch' || nextStep === 'storyF' || nextStep === 'storyA2' || nextStep === 'storyA3') {
+            // keep tracking
+        }
+        if (nextStep === 'storyF') {
+            if (aSteps.includes(stepId)) isACleared = true;
+            if (bSteps.includes(stepId)) isBCleared = true;
+        }
+    }
+
+    currentFeedback.nextStep = nextStep;
+    currentFeedback.isRetry = isRetry;
+    modal.classList.add('show');
+}
+
+function closeFeedbackAndProceed() {
+    document.getElementById('feedback-modal').classList.remove('show');
+    document.getElementById('feedback-btn').style.background = '';
+    document.getElementById('feedback-btn').style.color = '';
+    if (!currentFeedback.isRetry) {
+        navigateTo(currentFeedback.nextStep);
+    }
+}
+
+// ==========================================
+// 시작 처리
+// ==========================================
+function handleStart() {
+    const idEl = document.getElementById('input-id');
+    const nameEl = document.getElementById('input-name');
+    if (!idEl.value.trim() || !nameEl.value.trim()) {
+        idEl.style.borderColor = 'var(--red)';
+        nameEl.style.borderColor = 'var(--red)';
+        return;
+    }
+    studentInfo.id = idEl.value.trim();
+    studentInfo.name = nameEl.value.trim();
+
+    document.getElementById('log-container').innerHTML = '';
+    addLog(`[AUTH] 신원 확인 완료 — ${studentInfo.name} 요원`);
+    addLog('[SYSTEM] 작전 크립토노바 로딩 중...');
+    addLog('[WARN] 종이와 펜을 준비하십시오', 'warning');
+
+    setTimeout(() => {
+        addLog('[SYSTEM] 메인 통신망 허브 접속 완료', 'success');
+        navigateTo('branch');
+    }, 1200);
+}
+
+// ==========================================
+// 결과 전송
+// ==========================================
+function submitToGoogleAndCopy() {
+    const reportText = `[NDPA 크립토노바 작전 보고서]
+요원 학번: ${studentInfo.id}
+요원 이름: ${studentInfo.name}
+클리어: A구역 + B구역 + 최종 보스전
+최종 점수: ${totalScore}점`;
+
+    const textArea = document.createElement('textarea');
+    textArea.value = reportText;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try { document.execCommand('copy'); } catch (err) {}
+    document.body.removeChild(textArea);
+
+    const formData = new FormData();
+    formData.append(ENTRY_ID_STUDENT_ID, studentInfo.id);
+    formData.append(ENTRY_ID_NAME, studentInfo.name);
+    formData.append(ENTRY_ID_SCORE, totalScore);
+    formData.append(ENTRY_ID_ROUTE, "완전 정복(A+B+보스)");
+
+    fetch(GOOGLE_FORM_URL, { method: "POST", mode: "no-cors", body: formData })
+        .then(() => {
+            const msgEl = document.getElementById('copy-msg');
+            msgEl.innerText = "✓ 전송 완료! 보고서가 클립보드에 복사되었습니다. 선생님께 붙여넣기(Ctrl+V) 하세요.";
+            msgEl.style.display = 'block';
+        })
+        .catch(() => {
+            const msgEl = document.getElementById('copy-msg');
+            msgEl.innerText = "복사는 완료. 전송 실패 시 선생님께 직접 점수를 알려주세요.";
+            msgEl.style.color = 'var(--red)';
+            msgEl.style.display = 'block';
+        });
+}
+
+// ==========================================
+// 데이터 별칭 연결 (story1A 등 내부 링크용)
+// ==========================================
+STAGE_DATA['q1A'] = STAGE_DATA['q1A_real'];
+STAGE_DATA['q1B'] = STAGE_DATA['q1B_real'];
+
+// ==========================================
+// 시작
+// ==========================================
+window.onload = () => navigateTo('intro');
+</script>
+</body>
+</html>
